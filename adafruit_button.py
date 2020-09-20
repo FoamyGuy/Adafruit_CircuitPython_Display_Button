@@ -149,9 +149,7 @@ class Button(displayio.Group):
                     outline=self.outline_color,
                 )
             elif style == Button.SHADOWRECT:
-                self.shadow = Rect(
-                    0 + 2, 0 + 2, width - 2, height - 2, fill=outline_color
-                )
+                self.shadow = Rect(2, 2, width - 2, height - 2, fill=outline_color)
                 self.body = Rect(
                     0,
                     0,
@@ -162,7 +160,7 @@ class Button(displayio.Group):
                 )
             elif style == Button.SHADOWROUNDRECT:
                 self.shadow = RoundRect(
-                    0 + 2, 0 + 2, width - 2, height - 2, r=10, fill=self.outline_color
+                    2, 2, width - 2, height - 2, r=10, fill=self.outline_color
                 )
                 self.body = RoundRect(
                     0,
@@ -199,8 +197,8 @@ class Button(displayio.Group):
         dims = self._label.bounding_box
         if dims[2] >= self.width or dims[3] >= self.height:
             raise RuntimeError("Button not large enough for label")
-        self._label.x = 0 + (self.width - dims[2]) // 2
-        self._label.y = 0 + self.height // 2
+        self._label.x = (self.width - dims[2]) // 2
+        self._label.y = self.height // 2
         self._label.color = self._label_color
         self.append(self._label)
 
@@ -231,6 +229,16 @@ class Button(displayio.Group):
             self.body.outline = new_out
         if self._label is not None:
             self._label.color = new_label
+
+    @property
+    def group(self):
+        """Return self for compatibility with old API."""
+        print(
+            "Warning: The group property is being deprecated. "
+            "User code should be updated to add the Button directly to the "
+            "Display or other Groups."
+        )
+        return self
 
     def contains(self, point):
         """Used to determine if a point is contained within a button. For example,

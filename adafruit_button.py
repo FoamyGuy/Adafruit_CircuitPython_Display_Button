@@ -98,7 +98,9 @@ class Button(displayio.Group):
         label_color=0x0,
         selected_fill=None,
         selected_outline=None,
-        selected_label=None
+        selected_label=None,
+        auto_select=True,
+        on_click=None
     ):
         super().__init__(x=x, y=y)
         self.x = x
@@ -119,6 +121,9 @@ class Button(displayio.Group):
         self.selected_fill = _check_color(selected_fill)
         self.selected_outline = _check_color(selected_outline)
         self.selected_label = _check_color(selected_label)
+        self._on_click = on_click
+        self._previously_contained = False
+        self.auto_select = auto_select
 
         if self.selected_fill is None and fill_color is not None:
             self.selected_fill = (~self.fill_color) & 0xFFFFFF
@@ -245,3 +250,31 @@ class Button(displayio.Group):
         return (self.x <= point[0] <= self.x + self.width) and (
             self.y <= point[1] <= self.y + self.height
         )
+
+    @property
+    def on_click(self):
+        return self._on_click
+
+    @on_click.setter
+    def on_click(self, new_function):
+        self._on_click = new_function
+
+    def check_click(self, point):
+        if not point and self.selected:
+            if self.auto_select:
+                self.selected = False
+
+        if point:
+            if self.contains(point):
+                if self.auto_select:
+                    self.selected = True
+
+                if self._on_click:
+                    if not self._previously_contained:
+                        self._previously_contained = True
+                        self._on_click()
+
+            else:
+                if self.auto_select:
+                    self.selected = False
+                self._previously_contained = False

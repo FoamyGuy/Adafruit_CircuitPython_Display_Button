@@ -76,6 +76,7 @@ class Button(displayio.Group):
     :param selected_outline: Inverts the outline color.
     :param selected_label: Inverts the label color.
     :param on_click: Function to be called when button is clicked. Must call check_click() in main loop.
+    :param auto_select: Automatically select the button when clicked. Must call check_click() in main loop.
 
     """
     RECT = const(0)
@@ -84,23 +85,24 @@ class Button(displayio.Group):
     SHADOWROUNDRECT = const(3)
 
     def __init__(
-        self,
-        *,
-        x,
-        y,
-        width,
-        height,
-        name=None,
-        style=RECT,
-        fill_color=0xFFFFFF,
-        outline_color=0x0,
-        label=None,
-        label_font=None,
-        label_color=0x0,
-        selected_fill=None,
-        selected_outline=None,
-        selected_label=None,
-        on_click=None
+            self,
+            *,
+            x,
+            y,
+            width,
+            height,
+            name=None,
+            style=RECT,
+            fill_color=0xFFFFFF,
+            outline_color=0x0,
+            label=None,
+            label_font=None,
+            label_color=0x0,
+            selected_fill=None,
+            selected_outline=None,
+            selected_label=None,
+            auto_select=True,
+            on_click=None
     ):
         super().__init__(x=x, y=y)
         self.x = x
@@ -122,6 +124,8 @@ class Button(displayio.Group):
         self.selected_outline = _check_color(selected_outline)
         self.selected_label = _check_color(selected_label)
         self._on_click = on_click
+        self._previously_contained = False
+        self.auto_select = auto_select
 
         if self.selected_fill is None and fill_color is not None:
             self.selected_fill = (~self.fill_color) & 0xFFFFFF
@@ -149,7 +153,9 @@ class Button(displayio.Group):
                     outline=self.outline_color,
                 )
             elif style == Button.SHADOWRECT:
-                self.shadow = Rect(2, 2, width - 2, height - 2, fill=outline_color)
+                self.shadow = Rect(
+                    0 + 2, 0 + 2, width - 2, height - 2, fill=outline_color
+                )
                 self.body = Rect(
                     0,
                     0,
@@ -160,7 +166,7 @@ class Button(displayio.Group):
                 )
             elif style == Button.SHADOWROUNDRECT:
                 self.shadow = RoundRect(
-                    2, 2, width - 2, height - 2, r=10, fill=self.outline_color
+                    0 + 2, 0 + 2, width - 2, height - 2, r=10, fill=self.outline_color
                 )
                 self.body = RoundRect(
                     0,
@@ -197,8 +203,8 @@ class Button(displayio.Group):
         dims = self._label.bounding_box
         if dims[2] >= self.width or dims[3] >= self.height:
             raise RuntimeError("Button not large enough for label")
-        self._label.x = (self.width - dims[2]) // 2
-        self._label.y = self.height // 2
+        self._label.x = 0 + (self.width - dims[2]) // 2
+        self._label.y = 0 + self.height // 2
         self._label.color = self._label_color
         self.append(self._label)
 
@@ -230,23 +236,13 @@ class Button(displayio.Group):
         if self._label is not None:
             self._label.color = new_label
 
-    @property
-    def group(self):
-        """Return self for compatibility with old API."""
-        print(
-            "Warning: The group property is being deprecated. "
-            "User code should be updated to add the Button directly to the "
-            "Display or other Groups."
-        )
-        return self
-
     def contains(self, point):
         """Used to determine if a point is contained within a button. For example,
         ``button.contains(touch)`` where ``touch`` is the touch point on the screen will allow for
         determining that a button has been touched.
         """
         return (self.x <= point[0] <= self.x + self.width) and (
-            self.y <= point[1] <= self.y + self.height
+                self.y <= point[1] <= self.y + self.height
         )
 
     @property
@@ -258,6 +254,21 @@ class Button(displayio.Group):
         self._on_click = new_function
 
     def check_click(self, point):
-        if self._on_click:
+        if not point and self.selected:
+            if self.auto_select:
+                self.selected = False
+
+        if point:
             if self.contains(point):
-                self._on_click()
+                if self.auto_select:
+                    self.selected = True
+
+                if self._on_click:
+                    if not self._previously_contained:
+                        self._previously_contained = True
+                        self._on_click()
+
+            else:
+                if self.auto_select:
+                    self.selected = False
+                self._previously_contained = False

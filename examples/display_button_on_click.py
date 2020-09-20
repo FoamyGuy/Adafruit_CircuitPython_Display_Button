@@ -56,9 +56,4 @@ splash.append(button)
 # Loop and look for touches
 while True:
     p = ts.touch_point
-    if p:
-        button.check_click(p)
-        if button.contains(p):
-            button.selected = True
-    else:
-        button.selected = False
+    button.check_click(p)

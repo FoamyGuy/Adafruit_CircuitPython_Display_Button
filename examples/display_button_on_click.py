@@ -47,7 +47,8 @@ button = Button(
     label="HELLO WORLD",
     label_font=terminalio.FONT,
     label_color=BUTTON_LABEL_COLOR,
-    on_click=say_hi
+    on_click=say_hi,
+    auto_select=True
 )
 
 # Add button to the display context

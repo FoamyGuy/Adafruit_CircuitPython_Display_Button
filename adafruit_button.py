@@ -75,6 +75,7 @@ class Button(displayio.Group):
     :param selected_fill: Inverts the fill color.
     :param selected_outline: Inverts the outline color.
     :param selected_label: Inverts the label color.
+    :param on_click: Function to be called when button is clicked. Must call check_click() in main loop.
 
     """
     RECT = const(0)
@@ -98,7 +99,8 @@ class Button(displayio.Group):
         label_color=0x0,
         selected_fill=None,
         selected_outline=None,
-        selected_label=None
+        selected_label=None,
+        on_click=None
     ):
         super().__init__(x=x, y=y)
         self.x = x
@@ -119,6 +121,7 @@ class Button(displayio.Group):
         self.selected_fill = _check_color(selected_fill)
         self.selected_outline = _check_color(selected_outline)
         self.selected_label = _check_color(selected_label)
+        self._on_click = on_click
 
         if self.selected_fill is None and fill_color is not None:
             self.selected_fill = (~self.fill_color) & 0xFFFFFF
@@ -237,3 +240,16 @@ class Button(displayio.Group):
         return (self.x <= point[0] <= self.x + self.width) and (
             self.y <= point[1] <= self.y + self.height
         )
+
+    @property
+    def on_click(self):
+        return self._on_click
+
+    @on_click.setter
+    def on_click(self, new_function):
+        self._on_click = new_function
+
+    def check_click(self, point):
+        if self._on_click:
+            if self.contains(point):
+                self._on_click()

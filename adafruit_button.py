@@ -103,12 +103,13 @@ class Button(displayio.Group):
         super().__init__(x=x, y=y)
         self.x = x
         self.y = y
-        self.width = width
-        self.height = height
+        self._width = width
+        self._height = height
         self._font = label_font
         self._selected = False
         self.name = name
         self._label = label
+        self.style = style
         self.body = self.fill = self.shadow = None
 
         self.fill_color = _check_color(fill_color)
@@ -125,45 +126,51 @@ class Button(displayio.Group):
         if self.selected_outline is None and outline_color is not None:
             self.selected_outline = (~self.outline_color) & 0xFFFFFF
 
-        if (outline_color is not None) or (fill_color is not None):
-            if style == Button.RECT:
+        self._draw_body()
+
+    def _draw_body(self):
+        while len(self) > 0:
+            self.pop()
+
+        if (self.outline_color is not None) or (self.fill_color is not None):
+            if self.style == Button.RECT:
                 self.body = Rect(
                     0,
                     0,
-                    width,
-                    height,
+                    self.width,
+                    self.height,
                     fill=self.fill_color,
                     outline=self.outline_color,
                 )
-            elif style == Button.ROUNDRECT:
+            elif self.style == Button.ROUNDRECT:
                 self.body = RoundRect(
                     0,
                     0,
-                    width,
-                    height,
+                    self.width,
+                    self.height,
                     r=10,
                     fill=self.fill_color,
                     outline=self.outline_color,
                 )
-            elif style == Button.SHADOWRECT:
-                self.shadow = Rect(2, 2, width - 2, height - 2, fill=outline_color)
+            elif self.style == Button.SHADOWRECT:
+                self.shadow = Rect(2, 2, self.width - 2, self.height - 2, fill=self.outline_color)
                 self.body = Rect(
                     0,
                     0,
-                    width - 2,
-                    height - 2,
+                    self.width - 2,
+                    self.height - 2,
                     fill=self.fill_color,
                     outline=self.outline_color,
                 )
-            elif style == Button.SHADOWROUNDRECT:
+            elif self.style == Button.SHADOWROUNDRECT:
                 self.shadow = RoundRect(
-                    2, 2, width - 2, height - 2, r=10, fill=self.outline_color
+                    2, 2, self.width - 2, self.height - 2, r=10, fill=self.outline_color
                 )
                 self.body = RoundRect(
                     0,
                     0,
-                    width - 2,
-                    height - 2,
+                    self.width - 2,
+                    self.height - 2,
                     r=10,
                     fill=self.fill_color,
                     outline=self.outline_color,
@@ -172,7 +179,30 @@ class Button(displayio.Group):
                 self.append(self.shadow)
             self.append(self.body)
 
-        self.label = label
+        if isinstance(self._label, str):
+            self.label = self._label
+        else:
+            self.label = self.label
+
+    @property
+    def width(self):
+        """The width of the button"""
+        return self._width
+
+    @width.setter
+    def width(self, new_width):
+        self._width = new_width
+        self._draw_body()
+
+    @property
+    def height(self):
+        """The height of the button"""
+        return self._height
+
+    @height.setter
+    def height(self, new_height):
+        self._height = new_height
+        self._draw_body()
 
     @property
     def label(self):
